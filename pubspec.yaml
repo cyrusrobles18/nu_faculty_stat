@@ -1,0 +1,30 @@
+name: faculty_stat_monitoring
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.2.6 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_screenutil: ^5.9.3
+  flutter_secure_storage: ^9.2.2
+  http: ^1.2.0
+  jwt_decode: ^0.3.1
+  shared_preferences: ^2.2.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  assets:
+    - assets/images/
+  fonts:
+    - family: Mazzard
+      fonts:
+        - asset: assets/fonts/Mazzard.otf
+  uses-material-design: true
