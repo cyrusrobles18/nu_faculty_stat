@@ -55,7 +55,9 @@ class _LoginScreenState extends State<LoginScreen> {
       prefs.setString('password', password);
       prefs.setString('token', token);
       prefs.setBool('isLoggedIn', true);
-      print(prefs.getString('platform'));
+      prefs.setString('data', jsonEncode(data['user']));
+      print(data['user']['firstname']);
+      print(data['user']['status']);
       // Navigate based on role
       if (role == 'Admin') {
         Navigator.pushReplacementNamed(context, '/admin-dashboard');

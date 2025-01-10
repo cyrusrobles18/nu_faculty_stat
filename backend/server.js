@@ -107,7 +107,7 @@ app.post('/api/login', async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ message: 'Login successful', token , user });
   } catch (err) {
     console.error('Error during login:', err);
     res.status(500).json({ message: 'Server error' });
@@ -173,16 +173,17 @@ app.put('/api/status', async (req, res) => {
 
     // Proceed with updating status
     const { status } = req.body;
-    const validStatuses = ['In', 'Out', 'On Meeting', 'Out of Office'];
+    // const validStatuses = ['In', 'Out', 'On Meeting', 'Out of Office'];
 
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
+    // if (!validStatuses.includes(status)) {
+    //   return res.status(400).json({ message: 'Invalid status' });
+    // }
 
     const userId = user.id;
-
+    var [currentUser] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+    currentUser = currentUser[0];
     await db.query('UPDATE users SET status = ? WHERE id = ?', [status, userId]);
-    res.status(200).json({ message: 'Status updated successfully' });
+    res.status(200).json({ message: 'Status updated successfully' , currentUser});
   } catch (err) {
     console.error('Error verifying token or updating status:', err);
     return res.sendStatus(403); // Forbidden

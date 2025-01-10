@@ -1,7 +1,9 @@
 // ignore: constant_identifier_names
 import 'package:flutter/material.dart';
+
 // String HOST = 'http://127.0.0.1:3000';
-String HOST = 'http://192.168.114.147:3000';
+// String HOST = 'http://192.168.114.147:3000';
+String HOST = 'http://192.168.40.91:3000';
 
 const Color NU_YELLOW = Color(0xFFffd41d);
 const Color NU_BLUE = Color(0xFF35408f);

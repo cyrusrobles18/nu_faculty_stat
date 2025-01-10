@@ -58,7 +58,6 @@ class _SplashScreenState extends State<SplashScreen> {
         prefs.setString('password', password);
         prefs.setString('token', token);
         prefs.setBool('isLoggedIn', true);
-        print(prefs.getString('platform'));
         // Navigate based on role
         if (role == 'Admin') {
           Timer(
