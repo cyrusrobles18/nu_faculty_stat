@@ -2,7 +2,7 @@
 
 import 'package:faculty_stat_monitoring/constants.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_button.dart';
-import 'package:faculty_stat_monitoring/widgets/custom_font.dart';
+import 'package:faculty_stat_monitoring/widgets/custom_text.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_textformfield.dart';
 
 import 'package:flutter/material.dart';
@@ -53,13 +53,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
       prefs.setString('email', email);
       prefs.setString('password', password);
+      prefs.setString('role', role);
       prefs.setString('token', token);
       prefs.setBool('isLoggedIn', true);
       prefs.setString('data', jsonEncode(data['user']));
       print(data['user']['firstname']);
       print(data['user']['status']);
+      print(data['user']['role']);
       // Navigate based on role
-      if (role == 'Admin') {
+      if (role == 'SuperAdmin') {
+        Navigator.pushReplacementNamed(context, '/super-admin-dashboard');
+      } else if (role == 'Admin') {
         Navigator.pushReplacementNamed(context, '/admin-dashboard');
       } else {
         Navigator.pushReplacementNamed(context, '/faculty-dashboard');
@@ -72,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -80,16 +85,28 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SizedBox(
-              height: ScreenUtil().setHeight(50),
+              height: ScreenUtil().setHeight(30),
             ),
-            Align(
-              alignment: Alignment.center,
-              child: Image.asset(
-                'assets/images/NUCCITLogo.png',
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  radius: ScreenUtil().setSp(17.5),
+                  backgroundColor: NU_YELLOW,
+                  backgroundImage:
+                      const AssetImage('assets/images/NUShield.png'),
+                ),
+                const SizedBox(width: 20),
+                CustomText(
+                  text: 'Faculty Stat Monitoring',
+                  fontSize: ScreenUtil().setSp(15),
+                  color: NU_YELLOW,
+                  fontWeight: FontWeight.bold,
+                ),
+              ],
             ),
             SizedBox(
-              height: ScreenUtil().setHeight(50),
+              height: ScreenUtil().setHeight(30),
             ),
             Container(
               width: ScreenUtil().setWidth(300),
@@ -114,7 +131,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: <Widget>[
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: CustomFont(
+                      child: CustomText(
                         text: 'Welcome!!',
                         fontSize: ScreenUtil().setSp(20),
                         color: NU_BLUE,
@@ -152,18 +169,31 @@ class _LoginScreenState extends State<LoginScreen> {
                         hintTextSize: ScreenUtil().setSp(12),
                         hintText: 'Password'),
                     SizedBox(height: ScreenUtil().setHeight(50)),
-                    CustomButton(
-                      onTap: () {
-                        if (_formKey.currentState!.validate()) {
-                          _formKey.currentState!.save();
-                          loginUser();
-                        }
-                      },
-                      height: ScreenUtil().setHeight(45),
-                      width: ScreenUtil().setWidth(400),
-                      buttonName: 'Login',
-                      fontSize: ScreenUtil().setSp(11),
-                    )
+                    (screenWidth > 500)
+                        ? CustomButton(
+                            onTap: () {
+                              if (_formKey.currentState!.validate()) {
+                                _formKey.currentState!.save();
+                                loginUser();
+                              }
+                            },
+                            height: ScreenUtil().setHeight(65),
+                            width: ScreenUtil().setWidth(400),
+                            buttonName: 'Login',
+                            fontSize: ScreenUtil().setSp(11),
+                          )
+                        : CustomButton(
+                            onTap: () {
+                              if (_formKey.currentState!.validate()) {
+                                _formKey.currentState!.save();
+                                loginUser();
+                              }
+                            },
+                            height: ScreenUtil().setHeight(40),
+                            width: ScreenUtil().setWidth(400),
+                            buttonName: 'Login',
+                            fontSize: ScreenUtil().setSp(11),
+                          ),
                   ],
                 ),
               ),

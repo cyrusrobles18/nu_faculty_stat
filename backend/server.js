@@ -45,10 +45,10 @@ app.use(express.static(path.join(__dirname, '..', 'build/web')));
 
 // Registration endpoint
 app.post('/api/addfaculty', async (req, res) => {
-  const { firstname, lastname, email, password } = req.body;
+  const { firstname, lastname, email, password, role } = req.body;
 
   // Input validation
-  if (!firstname || !lastname || !email || !password) {
+  if (!firstname || !lastname || !email || !password || !role) {
     return res.status(400).json({ message: 'All fields are required' });
   }
 
@@ -64,8 +64,8 @@ app.post('/api/addfaculty', async (req, res) => {
 
     // Insert new user
     await db.query(
-      'INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)',
-      [firstname, lastname, email, hashedPassword]
+      'INSERT INTO users (firstname, lastname, email, password, role) VALUES (?, ?, ?, ?, ?)',
+      [firstname, lastname, email, hashedPassword, role]
     );
 
     res.status(200).json({ message: 'User registered successfully' });
@@ -127,7 +127,7 @@ app.get('/api/users', async (req, res) => {
     const user = jwt.verify(token, process.env.JWT_SECRET);
 
     // Check user role
-    if (user.role !== 'Admin') {
+    if (user.role == 'Faculty') {
       return res.sendStatus(403); // Forbidden
     }
 

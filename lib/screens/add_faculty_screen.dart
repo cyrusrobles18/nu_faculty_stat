@@ -1,5 +1,5 @@
 import 'package:faculty_stat_monitoring/widgets/custom_button.dart';
-import 'package:faculty_stat_monitoring/widgets/custom_font.dart';
+import 'package:faculty_stat_monitoring/widgets/custom_text.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_textformfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,6 +15,8 @@ class AddFacultyScreen extends StatefulWidget {
 }
 
 class _AddFacultyScreenState extends State<AddFacultyScreen> {
+  String _selectedRole = 'Admin';
+  List<String> roles = ['Admin', 'Faculty'];
   final _formKey = GlobalKey<FormState>();
   TextEditingController firstnameController = TextEditingController();
   TextEditingController lastnameController = TextEditingController();
@@ -41,6 +43,7 @@ class _AddFacultyScreenState extends State<AddFacultyScreen> {
         'lastname': lastname,
         'email': email,
         'password': password,
+        'role': _selectedRole,
       }),
     );
 
@@ -80,7 +83,7 @@ class _AddFacultyScreenState extends State<AddFacultyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: CustomFont(
+        title: CustomText(
             fontWeight: FontWeight.bold,
             text: 'Add Faculty',
             fontSize: ScreenUtil().setSp(12),
@@ -148,6 +151,35 @@ class _AddFacultyScreenState extends State<AddFacultyScreen> {
                         ? 'Password must be at least 6 characters'
                         : null,
                     hintText: 'Enter password',
+                  ),
+                  SizedBox(height: ScreenUtil().setHeight(20)),
+                  Container(
+                    padding:  EdgeInsets.symmetric(horizontal: ScreenUtil().setWidth(5), vertical: ScreenUtil().setHeight(5)),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300, 
+                      border: Border.all(color:NU_BLUE, width: 1.5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _selectedRole,
+                        items: roles.map((String role) {
+                          return DropdownMenuItem<String>(
+                            value: role,
+                            child: CustomText(
+                              text: role,
+                              fontSize: ScreenUtil().setSp(9),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (newRole) {
+                          setState(() {
+                            _selectedRole = newRole!;
+                          });
+                        },
+                      ),
+                    ),
                   ),
                   SizedBox(height: ScreenUtil().setHeight(20)),
                   CustomButton(

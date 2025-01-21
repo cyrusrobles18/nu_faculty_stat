@@ -1,5 +1,5 @@
 import 'package:faculty_stat_monitoring/constants.dart';
-import 'package:faculty_stat_monitoring/widgets/custom_font.dart';
+import 'package:faculty_stat_monitoring/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 
 // ignore: must_be_immutable
@@ -38,7 +38,7 @@ class CustomButton extends StatelessWidget {
         child: Center(
           child: buttonName == ''
               ? icon
-              : CustomFont(
+              : CustomText(
                   text: buttonName, fontSize: fontSize, color: fontColor),
         ),
       ),

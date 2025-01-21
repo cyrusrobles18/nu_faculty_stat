@@ -103,12 +103,17 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Align(
-              alignment: Alignment.center,
-              child: Image.asset(
-                'assets/images/NUCCITLogoX3.jpg',
-                scale: ScreenUtil().setSp(2.5),
-              ),
+            // Align(
+            //   alignment: Alignment.center,
+            //   child: Image.asset(
+            //     'assets/images/NUCCITLogoX3.jpg',
+            //     scale: ScreenUtil().setSp(2.5),
+            //   ),
+            // ),
+            CircleAvatar(
+              radius: ScreenUtil().setSp(20),
+              backgroundColor: NU_YELLOW,
+              backgroundImage: const AssetImage('assets/images/NUShield.png'),
             ),
             SizedBox(
               height: ScreenUtil().setHeight(70),

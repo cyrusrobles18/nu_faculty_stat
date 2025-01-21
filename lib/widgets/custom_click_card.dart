@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'custom_font.dart';
+import 'custom_text.dart';
 
 class CustomClickCard extends StatelessWidget {
   final double height;
@@ -10,6 +10,7 @@ class CustomClickCard extends StatelessWidget {
   final String text;
   final Color cardColor;
   final Color fontColor;
+  final onTap;
   const CustomClickCard({
     super.key,
     required this.height,
@@ -18,7 +19,7 @@ class CustomClickCard extends StatelessWidget {
     required this.text,
     required this.cardColor,
     required this.fontColor,
-    required this.fontSize,
+    required this.fontSize, required this.onTap,
   });
 
   @override
@@ -31,7 +32,7 @@ class CustomClickCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(ScreenUtil().setSp(8)),
-        onTap: () {},
+        onTap: onTap,
         child: SizedBox(
           height: height,
           width: width,
@@ -40,7 +41,7 @@ class CustomClickCard extends StatelessWidget {
             children: [
               icon,
               SizedBox(height: ScreenUtil().setHeight(5)),
-              CustomFont(
+              CustomText(
                 text: text,
                 fontSize: fontSize,
                 color: fontColor,

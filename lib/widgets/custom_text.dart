@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class CustomFont extends StatelessWidget {
-  const CustomFont(
+class CustomText extends StatelessWidget {
+  const CustomText(
       {super.key,
       required this.text,
       required this.fontSize,
-      required this.color,
+       this.color =Colors.black,
       this.fontWeight = FontWeight.normal,
       this.textAlign = TextAlign.left,
       this.letterSpacing = 0,

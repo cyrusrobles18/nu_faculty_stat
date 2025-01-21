@@ -2,6 +2,7 @@ import 'package:faculty_stat_monitoring/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'screens/admin_dashboard_screen.dart';
+import 'screens/super_admin_dashboard_screen.dart';
 import 'screens/faculty_dashboard_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
@@ -30,6 +31,7 @@ class FacultyStatMonitoringApp extends StatelessWidget {
             '/home': (context) => const HomeScreen(),
             '/faculty-dashboard': (context) => const FacultyDashboardScreen(),
             '/admin-dashboard': (context) => const AdminDashboardScreen(),
+            '/super-admin-dashboard': (context) => const SuperAdminDashboardScreen(),
           },
         );
       },

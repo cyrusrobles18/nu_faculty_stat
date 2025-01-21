@@ -1,230 +1,751 @@
+import 'dart:convert';
 import 'dart:async';
-import 'package:faculty_stat_monitoring/widgets/custom_font.dart';
-import 'package:intl/intl.dart';
-import 'package:faculty_stat_monitoring/services/user_service.dart';
+
+import 'package:faculty_stat_monitoring/widgets/custom_textformfield.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/user.dart';
+import 'package:http/http.dart' as http;
+
+import '../constants.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_click_card.dart';
+import '../widgets/custom_text.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
-  const AdminDashboardScreen({super.key});
+  const AdminDashboardScreen({Key? key}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _AdminDashboardScreenState();
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isPc = screenWidth > 500; // Adjust breakpoint as needed
+
+    return isPc ? const PCLayout() : MobileLayout();
+  }
+}
+
+class PCLayout extends StatefulWidget {
+  const PCLayout({Key? key}) : super(key: key);
+
+  @override
+  State<PCLayout> createState() => _PCLayoutState();
+}
+
+class _PCLayoutState extends State<PCLayout> {
+  TextEditingController inputController = TextEditingController();
+  String _selectedStatus = 'Out';
+  final List<String> statuses = ['In', 'Out', 'On Meeting', 'Out of Office'];
   final storage = const FlutterSecureStorage();
-  List<User> userList = [];
-  List<User> adminList = [];
-  final ValueNotifier<List<User>> _userListNotifier =
-      ValueNotifier<List<User>>([]);
-  final ValueNotifier<List<User>> _adminListNotifier =
-      ValueNotifier<List<User>>([]);
-  bool _isLoading = false; // Track loading state
-  Timer? _refreshTimer; // Timer for periodic refresh
-  late Timer _timer;
-  String _currentTime = '';
+  late SharedPreferences prefs;
+  String name = '';
+  String status = '';
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
-    _startPeriodicRefresh(); // Start the timer
-    _updateTime(); // Set initial time
-    // Update time every second
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      _updateTime();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await getInfo();
+    // Set up a timer for periodic refresh every 5 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      await getInfo();
     });
+  }
+
+  Future<void> getInfo() async {
+    try {
+      prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('data') ?? '';
+      if (data.isNotEmpty) {
+        final currentUser = jsonDecode(data);
+        setState(() {
+          name = currentUser['firstname'] ?? '';
+          status = currentUser['status'] ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching info: $e');
+    }
+  }
+
+  Future<void> _updateStatus() async {
+    prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('jwt_token');
+    if (token == null || token == 'NoValue') {
+      Navigator.pushReplacementNamed(context, '/success');
+      return;
+    }
+    final url = Uri.parse('$HOST/api/status');
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'status': _selectedStatus}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await prefs.setString('data', jsonEncode(data['currentUser']));
+      setState(() {
+        status = data['currentUser']['status']; // Update UI immediately
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Status updated')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update status')),
+      );
+    }
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel(); // Cancel the timer to prevent memory leaks
-    _timer.cancel(); // Cancel timer to prevent memory leaks
     super.dispose();
-  }
-
-  void _startPeriodicRefresh() {
-    const refreshInterval =
-        Duration(seconds: 5); // Set your desired refresh interval
-    _refreshTimer = Timer.periodic(refreshInterval, (timer) {
-      _fetchUsers();
-    });
-  }
-
-  void _updateTime() {
-    final now = DateTime.now();
-    // Format the time using intl package for a nice display, e.g. hh:mm:ss
-    final formattedTime = DateFormat('MM/dd/yyyy hh:mm:ss a').format(now);
-    setState(() {
-      _currentTime = formattedTime;
-    });
-  }
-
-  Future<void> _fetchUsers() async {
-    if (_isLoading) return; // Prevent multiple concurrent fetches
-    _isLoading = true;
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('jwt_token');
-
-    if (token == null || token.isEmpty) {
-      Navigator.pushReplacementNamed(context, '/login');
-      return;
-    }
-
-    try {
-      UserService userService = UserService();
-      userService.token = token;
-      await userService.fetchAllUser();
-      List<User> fetchedUsers =
-          userService.data.map((json) => User.fromJson(json)).toList();
-      List<User> fetchedAdmins =
-          userService.data.map((json) => User.fromJson(json)).toList();
-      fetchedUsers =
-          fetchedUsers.where((user) => user.role != 'Admin').toList();
-      fetchedAdmins =
-          fetchedAdmins.where((user) => user.role == 'Admin').toList();
-      _userListNotifier.value = fetchedUsers;
-      _adminListNotifier.value = fetchedAdmins;
-    } catch (e) {
-      print('Error fetching users: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error fetching users: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      _isLoading = false;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
+        backgroundColor: NU_BLUE,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Image.asset(
-              'assets/images/NUCCITLogo.png',
-              scale: ScreenUtil().setSp(0.7),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: NU_YELLOW,
+              backgroundImage: const AssetImage('assets/images/NUShield.png'),
             ),
-            Spacer(),
-            CustomFont(
-                text: _currentTime,
-                fontSize: ScreenUtil().setSp(12),
-                color: Colors.black),
-            Spacer(),
-            IconButton(
-              icon: const Icon(Icons.add),
+            const SizedBox(width: 10),
+            CustomText(
+              text: 'Admin Dashboard',
+              fontSize: 20,
+              color: NU_YELLOW,
+              fontWeight: FontWeight.bold,
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/add-faculty');
               },
+              icon: Icon(
+                Icons.add,
+                color: NU_YELLOW,
+              )),
+          IconButton(
+            icon: const Icon(
+              Icons.logout,
+              color: NU_YELLOW,
             ),
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.setString('jwt_token', 'NoValue');
-                // await storage.delete(key: 'jwt_token');
-                Navigator.pushReplacementNamed(context, '/login');
-              },
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              prefs.setString('jwt_token', 'NoValue');
+              Navigator.pushReplacementNamed(context, '/login');
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        color: Colors.white,
+        child: Row(
+          children: [
+            Container(
+              width: MediaQuery.sizeOf(context).width * .35,
+              child: Center(
+                child: CustomText(
+                  text: 'Faculty Management on progress...',
+                  fontSize: 20,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            Container(
+              width: MediaQuery.sizeOf(context).width * .65,
+              child: Column(
+                children: [
+                  SizedBox(height: ScreenUtil().setHeight(30)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CustomClickCard(
+                        height: ScreenUtil().setHeight(150),
+                        width: ScreenUtil().setWidth(80),
+                        text: 'In',
+                        cardColor: STAT_GREEN_IN,
+                        fontColor: Colors.white,
+                        fontSize: ScreenUtil().setSp(10),
+                        icon: Icon(
+                          Icons.punch_clock,
+                          color: Colors.white,
+                          size: ScreenUtil().setSp(25),
+                        ),
+                        onTap: () async {
+                          setState(() {
+                            _selectedStatus = 'In';
+                          });
+                          await _updateStatus();
+                        },
+                      ),
+                      CustomClickCard(
+                        height: ScreenUtil().setHeight(150),
+                        width: ScreenUtil().setWidth(80),
+                        text: 'Out',
+                        cardColor: STAT_RED_OUT,
+                        fontColor: Colors.white,
+                        fontSize: ScreenUtil().setSp(10),
+                        icon: Icon(
+                          Icons.directions_walk,
+                          color: Colors.white,
+                          size: ScreenUtil().setSp(25),
+                        ),
+                        onTap: () async {
+                          setState(() {
+                            _selectedStatus = 'Out';
+                          });
+                          await _updateStatus();
+                        },
+                      ),
+                      CustomClickCard(
+                        height: ScreenUtil().setHeight(150),
+                        width: ScreenUtil().setWidth(80),
+                        text: 'On Meeting',
+                        cardColor: STAT_ORANGE_MEETING,
+                        fontColor: Colors.white,
+                        fontSize: ScreenUtil().setSp(10),
+                        icon: Icon(
+                          Icons.meeting_room,
+                          color: Colors.white,
+                          size: ScreenUtil().setSp(25),
+                        ),
+                        onTap: () async {
+                          setState(() {
+                            _selectedStatus = 'On Meeting';
+                          });
+                          await _updateStatus();
+                        },
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CustomClickCard(
+                        height: ScreenUtil().setHeight(150),
+                        width: ScreenUtil().setWidth(80),
+                        text: 'Out of Office',
+                        cardColor: STAT_YELLOW_OTOFFICE,
+                        fontColor: Colors.black54,
+                        fontSize: ScreenUtil().setSp(10),
+                        icon: Icon(
+                          Icons.business,
+                          color: Colors.black54,
+                          size: ScreenUtil().setSp(25),
+                        ),
+                        onTap: () async {
+                          setState(() {
+                            _selectedStatus = 'Out of Office';
+                          });
+                          await _updateStatus();
+                        },
+                      ),
+                      CustomClickCard(
+                        height: ScreenUtil().setHeight(150),
+                        width: ScreenUtil().setWidth(80),
+                        text: 'In Class',
+                        cardColor: STAT_BLUE_INCLASS,
+                        fontColor: Colors.white,
+                        fontSize: ScreenUtil().setSp(10),
+                        icon: Icon(
+                          Icons.class_,
+                          color: Colors.white,
+                          size: ScreenUtil().setSp(25),
+                        ),
+                        onTap: () async {
+                          setState(() {
+                            _selectedStatus = 'In Class';
+                          });
+                          await _updateStatus();
+                        },
+                      ),
+                      CustomClickCard(
+                        height: ScreenUtil().setHeight(150),
+                        width: ScreenUtil().setWidth(80),
+                        text: 'On Leave',
+                        cardColor: STAT_RED_ONLEAVE,
+                        fontColor: Colors.white,
+                        fontSize: ScreenUtil().setSp(10),
+                        icon: Icon(
+                          Icons.exit_to_app,
+                          color: Colors.white,
+                          size: ScreenUtil().setSp(25),
+                        ),
+                        onTap: () async {
+                          setState(() {
+                            _selectedStatus = 'On Leave';
+                          });
+                          await _updateStatus();
+                        },
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: ScreenUtil().setHeight(20)),
+                  CustomButton(
+                    onTap: () => _showInputDialog(context, inputController),
+                    height: ScreenUtil().setHeight(60),
+                    width: ScreenUtil().setWidth(247.5),
+                    buttonName: 'Custom Status',
+                    fontSize: ScreenUtil().setSp(12),
+                  )
+                ],
+              ),
             ),
           ],
         ),
       ),
-      body: Container(
-          color: Colors.white,
-          child: Row(
-            children: [
-              Container(
-                width: MediaQuery.sizeOf(context).width * .25,
-                child: ValueListenableBuilder<List<User>>(
-                  valueListenable: _adminListNotifier,
-                  builder: (context, users, child) {
-                    if (_isLoading && users.isEmpty) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (users.isEmpty) {
-                      return const Center(child: Text('No users found'));
-                    } else {
-                      return RefreshIndicator(
-                        // Add refresh indicator
-                        onRefresh: _fetchUsers,
-                        child: ListView.builder(
-                          itemCount: users.length,
-                          itemBuilder: (context, index) {
-                            User user = users[index];
-                            return ListTile(
-                              leading: const Icon(Icons.person),
-                              title: CustomFont(
-                                  text: '${user.firstname} ${user.lastname}',
-                                  fontSize: ScreenUtil().setSp(10),
-                                  color: Colors.black),
-                              subtitle: CustomFont(
-                                  text: 'Status: ${user.status}',
-                                  fontSize: ScreenUtil().setSp(8),
-                                  color: Colors.black),
-                              trailing: CustomFont(
-                                  text: user.role,
-                                  fontSize: ScreenUtil().setSp(5),
-                                  color: Colors.black),
-                            );
-                          },
-                        ),
-                      );
-                    }
-                  },
-                ),
+    );
+  }
+
+  void _showInputDialog(
+      BuildContext context, TextEditingController inputController) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: CustomText(
+            text: 'Custom Status',
+            fontSize: 12,
+            color: NU_BLUE,
+          ),
+          content: CustomTextFormField(
+            height: ScreenUtil().setHeight(10),
+            width: ScreenUtil().setWidth(5),
+            fontSize: ScreenUtil().setSp(12),
+            hintTextSize: ScreenUtil().setSp(12),
+            fontColor: NU_BLUE,
+            controller: inputController,
+            onSaved: (value) => inputController.text = value!,
+            validator: (value) => value!.isEmpty ? 'Enter custom status' : null,
+            hintText: 'Enter custom status',
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const CustomText(
+                text: 'Cancel',
+                fontSize: 12,
+                color: NU_BLUE,
               ),
-              Expanded(
-                child: Container(
-                  width: MediaQuery.sizeOf(context).width * .75,
-                  child: ValueListenableBuilder<List<User>>(
-                    valueListenable: _userListNotifier,
-                    builder: (context, users, child) {
-                      if (_isLoading && users.isEmpty) {
-                        return const Center(child: CircularProgressIndicator());
-                      } else if (users.isEmpty) {
-                        return const Center(child: Text('No users found'));
-                      } else {
-                        return RefreshIndicator(
-                          // Add refresh indicator
-                          onRefresh: _fetchUsers,
-                          child: ListView.builder(
-                            itemCount: users.length,
-                            itemBuilder: (context, index) {
-                              User user = users[index];
-                              return ListTile(
-                                leading: const Icon(Icons.person),
-                                title: CustomFont(
-                                    text: '${user.firstname} ${user.lastname}',
-                                    fontSize: ScreenUtil().setSp(10),
-                                    color: Colors.black),
-                                subtitle: CustomFont(
-                                    text: 'Status: ${user.status}',
-                                    fontSize: ScreenUtil().setSp(8),
-                                    color: Colors.black),
-                                trailing: CustomFont(
-                                    text: user.role,
-                                    fontSize: ScreenUtil().setSp(5),
-                                    color: Colors.black),
-                              );
-                            },
-                          ),
-                        );
-                      }
-                    },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: NU_BLUE,
+              ),
+              onPressed: () {
+                String inputValue = inputController.text;
+                print('User input: $inputValue');
+                _selectedStatus = inputValue;
+                _updateStatus();
+                Navigator.of(context).pop();
+              },
+              child: CustomText(
+                text: 'Submit',
+                fontSize: 12,
+                color: NU_YELLOW,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class MobileLayout extends StatefulWidget {
+  MobileLayout({
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  State<MobileLayout> createState() => _MobileLayoutState();
+}
+
+class _MobileLayoutState extends State<MobileLayout> {
+  TextEditingController inputController = TextEditingController();
+  String _selectedStatus = 'Out';
+  final List<String> statuses = ['In', 'Out', 'On Meeting', 'Out of Office'];
+  final storage = const FlutterSecureStorage();
+  late SharedPreferences prefs;
+  String name = '';
+  String status = '';
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await getInfo();
+    // Set up a timer for periodic refresh every 5 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      await getInfo();
+    });
+  }
+
+  Future<void> getInfo() async {
+    try {
+      prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('data') ?? '';
+      if (data.isNotEmpty) {
+        final currentUser = jsonDecode(data);
+        setState(() {
+          name = currentUser['firstname'] ?? '';
+          status = currentUser['status'] ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching info: $e');
+    }
+  }
+
+  Future<void> _updateStatus() async {
+    prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('jwt_token');
+    if (token == null || token == 'NoValue') {
+      Navigator.pushReplacementNamed(context, '/success');
+      return;
+    }
+    final url = Uri.parse('$HOST/api/status');
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'status': _selectedStatus}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      await prefs.setString('data', jsonEncode(data['currentUser']));
+      setState(() {
+        status = data['currentUser']['status']; // Update UI immediately
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Status updated')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update status')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel(); // Cancel the timer to prevent memory leaks
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: <Widget>[
+          Container(
+            padding: EdgeInsets.all(ScreenUtil().setSp(20)),
+            decoration: BoxDecoration(
+              color: NU_BLUE,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(ScreenUtil().setSp(20)),
+                bottomRight: Radius.circular(ScreenUtil().setSp(20)),
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CircleAvatar(
+                      radius: ScreenUtil().setSp(30),
+                      backgroundColor: NU_YELLOW,
+                      backgroundImage:
+                          const AssetImage('assets/images/NUShield.png'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: NU_YELLOW),
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        prefs.setString('jwt_token', 'NoValue');
+                        Navigator.pushReplacementNamed(context, '/login');
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: ScreenUtil().setHeight(10)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CustomText(
+                      text: 'Welcome, ${name}',
+                      fontSize: ScreenUtil().setSp(20),
+                      color: NU_YELLOW,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add, color: NU_YELLOW),
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/add-faculty');
+                      },
+                    ),
+                  ],
+                ),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: CustomText(
+                    text: 'Status: ${status}',
+                    fontSize: ScreenUtil().setSp(15),
+                    color: NU_YELLOW,
                   ),
                 ),
+              ],
+            ),
+          ),
+          SizedBox(height: ScreenUtil().setHeight(30)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomClickCard(
+                height: ScreenUtil().setHeight(130),
+                width: ScreenUtil().setWidth(150),
+                text: 'In',
+                cardColor: STAT_GREEN_IN,
+                fontColor: Colors.white,
+                fontSize: ScreenUtil().setSp(12),
+                icon: Icon(
+                  Icons.punch_clock,
+                  color: Colors.white,
+                  size: ScreenUtil().setSp(50),
+                ),
+                onTap: () async {
+                  setState(() {
+                    _selectedStatus = 'In';
+                  });
+                  await _updateStatus();
+                },
+              ),
+              CustomClickCard(
+                height: ScreenUtil().setHeight(130),
+                width: ScreenUtil().setWidth(150),
+                text: 'Out',
+                cardColor: STAT_RED_OUT,
+                fontColor: Colors.white,
+                fontSize: ScreenUtil().setSp(12),
+                icon: Icon(
+                  Icons.directions_walk,
+                  color: Colors.white,
+                  size: ScreenUtil().setSp(50),
+                ),
+                onTap: () async {
+                  setState(() {
+                    _selectedStatus = 'Out';
+                  });
+                  await _updateStatus();
+                },
               ),
             ],
-          )),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomClickCard(
+                height: ScreenUtil().setHeight(130),
+                width: ScreenUtil().setWidth(150),
+                text: 'On Meeting',
+                cardColor: STAT_ORANGE_MEETING,
+                fontColor: Colors.white,
+                fontSize: ScreenUtil().setSp(12),
+                icon: Icon(
+                  Icons.meeting_room,
+                  color: Colors.white,
+                  size: ScreenUtil().setSp(50),
+                ),
+                onTap: () async {
+                  setState(() {
+                    _selectedStatus = 'On Meeting';
+                  });
+                  await _updateStatus();
+                },
+              ),
+              CustomClickCard(
+                height: ScreenUtil().setHeight(130),
+                width: ScreenUtil().setWidth(150),
+                text: 'Out of Office',
+                cardColor: STAT_YELLOW_OTOFFICE,
+                fontColor: Colors.black54,
+                fontSize: ScreenUtil().setSp(12),
+                icon: Icon(
+                  Icons.business,
+                  color: Colors.black54,
+                  size: ScreenUtil().setSp(50),
+                ),
+                onTap: () async {
+                  setState(() {
+                    _selectedStatus = 'Out of Office';
+                  });
+                  await _updateStatus();
+                },
+              ),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CustomClickCard(
+                height: ScreenUtil().setHeight(130),
+                width: ScreenUtil().setWidth(150),
+                text: 'In Class',
+                cardColor: STAT_BLUE_INCLASS,
+                fontColor: Colors.white,
+                fontSize: ScreenUtil().setSp(12),
+                icon: Icon(
+                  Icons.class_,
+                  color: Colors.white,
+                  size: ScreenUtil().setSp(50),
+                ),
+                onTap: () async {
+                  setState(() {
+                    _selectedStatus = 'In Class';
+                  });
+                  await _updateStatus();
+                },
+              ),
+              CustomClickCard(
+                height: ScreenUtil().setHeight(130),
+                width: ScreenUtil().setWidth(150),
+                text: 'On Leave',
+                cardColor: STAT_RED_ONLEAVE,
+                fontColor: Colors.white,
+                fontSize: ScreenUtil().setSp(12),
+                icon: Icon(
+                  Icons.exit_to_app,
+                  color: Colors.white,
+                  size: ScreenUtil().setSp(50),
+                ),
+                onTap: () async {
+                  setState(() {
+                    _selectedStatus = 'On Leave';
+                  });
+                  await _updateStatus();
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: ScreenUtil().setHeight(20)),
+          CustomButton(
+            onTap: () => _showInputDialog(context, inputController),
+            height: ScreenUtil().setHeight(50),
+            width: ScreenUtil().setWidth(310),
+            buttonName: 'Custom Status',
+            fontSize: ScreenUtil().setSp(12),
+          )
+          // DropdownButton<String>(
+          //   value: _selectedStatus,
+          //   items: statuses.map((String value) {
+          //     return DropdownMenuItem<String>(
+          //       value: value,
+          //       child: Text(value),
+          //     );
+          //   }).toList(),
+          //   onChanged: (newStatus) {
+          //     setState(() {
+          //       _selectedStatus = newStatus!;
+          //     });
+          //     _updateStatus(); // Trigger status update immediately
+          //   },
+          // ),
+          // SizedBox(height: 20),
+          // ElevatedButton(
+          //   child: const Text('Update Status'),
+          //   onPressed: () async {
+          //     await _updateStatus();
+          //   },
+          // ),
+        ],
+      ),
+    );
+  }
+
+  void _showInputDialog(
+      BuildContext context, TextEditingController inputController) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: CustomText(
+            text: 'Custom Status',
+            fontSize: 12,
+            color: NU_BLUE,
+          ),
+          content: CustomTextFormField(
+            height: ScreenUtil().setHeight(10),
+            width: ScreenUtil().setWidth(5),
+            fontSize: ScreenUtil().setSp(12),
+            hintTextSize: ScreenUtil().setSp(12),
+            fontColor: NU_BLUE,
+            controller: inputController,
+            onSaved: (value) => inputController.text = value!,
+            validator: (value) => value!.isEmpty ? 'Enter custom status' : null,
+            hintText: 'Enter custom status',
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const CustomText(
+                text: 'Cancel',
+                fontSize: 12,
+                color: NU_BLUE,
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: NU_BLUE,
+              ),
+              onPressed: () {
+                String inputValue = inputController.text;
+                print('User input: $inputValue');
+                _selectedStatus = inputValue;
+                _updateStatus();
+                Navigator.of(context).pop();
+              },
+              child: CustomText(
+                text: 'Submit',
+                fontSize: 12,
+                color: NU_YELLOW,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
