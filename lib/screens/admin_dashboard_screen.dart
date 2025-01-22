@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import '../constants.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_click_card.dart';
+import '../widgets/custom_loading_dialog.dart';
 import '../widgets/custom_text.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -193,11 +194,21 @@ class _PCLayoutState extends State<PCLayout> {
                           color: Colors.white,
                           size: ScreenUtil().setSp(25),
                         ),
-                        onTap: () async {
+                        onTap: () {
                           setState(() {
                             _selectedStatus = 'In';
+                            showConfirmDialog(
+                              context,
+                              'Confirm',
+                              'Are you sure to want updated you status to $_selectedStatus',
+                              () {
+                                setState(() {
+                                  _updateStatus();
+                                  getInfo();
+                                });
+                              },
+                            );
                           });
-                          await _updateStatus();
                         },
                       ),
                       CustomClickCard(
@@ -212,11 +223,21 @@ class _PCLayoutState extends State<PCLayout> {
                           color: Colors.white,
                           size: ScreenUtil().setSp(25),
                         ),
-                        onTap: () async {
+                        onTap: () {
                           setState(() {
                             _selectedStatus = 'Out';
+                            showConfirmDialog(
+                              context,
+                              'Confirm',
+                              'Are you sure to want updated you status to $_selectedStatus',
+                              () {
+                                setState(() {
+                                  _updateStatus();
+                                  getInfo();
+                                });
+                              },
+                            );
                           });
-                          await _updateStatus();
                         },
                       ),
                       CustomClickCard(
@@ -231,11 +252,21 @@ class _PCLayoutState extends State<PCLayout> {
                           color: Colors.white,
                           size: ScreenUtil().setSp(25),
                         ),
-                        onTap: () async {
+                        onTap: () {
                           setState(() {
                             _selectedStatus = 'On Meeting';
+                            showConfirmDialog(
+                              context,
+                              'Confirm',
+                              'Are you sure to want updated you status to $_selectedStatus',
+                              () {
+                                setState(() {
+                                  _updateStatus();
+                                  getInfo();
+                                });
+                              },
+                            );
                           });
-                          await _updateStatus();
                         },
                       ),
                     ],
@@ -255,11 +286,21 @@ class _PCLayoutState extends State<PCLayout> {
                           color: Colors.black54,
                           size: ScreenUtil().setSp(25),
                         ),
-                        onTap: () async {
+                        onTap: () {
                           setState(() {
                             _selectedStatus = 'Out of Office';
+                            showConfirmDialog(
+                              context,
+                              'Confirm',
+                              'Are you sure to want updated you status to $_selectedStatus',
+                              () {
+                                setState(() {
+                                  _updateStatus();
+                                  getInfo();
+                                });
+                              },
+                            );
                           });
-                          await _updateStatus();
                         },
                       ),
                       CustomClickCard(
@@ -274,11 +315,21 @@ class _PCLayoutState extends State<PCLayout> {
                           color: Colors.white,
                           size: ScreenUtil().setSp(25),
                         ),
-                        onTap: () async {
+                        onTap: () {
                           setState(() {
                             _selectedStatus = 'In Class';
+                            showConfirmDialog(
+                              context,
+                              'Confirm',
+                              'Are you sure to want updated you status to $_selectedStatus',
+                              () {
+                                setState(() {
+                                  _updateStatus();
+                                  getInfo();
+                                });
+                              },
+                            );
                           });
-                          await _updateStatus();
                         },
                       ),
                       CustomClickCard(
@@ -293,11 +344,21 @@ class _PCLayoutState extends State<PCLayout> {
                           color: Colors.white,
                           size: ScreenUtil().setSp(25),
                         ),
-                        onTap: () async {
+                        onTap: () {
                           setState(() {
                             _selectedStatus = 'On Leave';
+                            showConfirmDialog(
+                              context,
+                              'Confirm',
+                              'Are you sure to want updated you status to $_selectedStatus',
+                              () {
+                                setState(() {
+                                  _updateStatus();
+                                  getInfo();
+                                });
+                              },
+                            );
                           });
-                          await _updateStatus();
                         },
                       ),
                     ],
@@ -360,8 +421,18 @@ class _PCLayoutState extends State<PCLayout> {
                 String inputValue = inputController.text;
                 print('User input: $inputValue');
                 _selectedStatus = inputValue;
-                _updateStatus();
-                Navigator.of(context).pop();
+                showConfirmDialog(
+                  context,
+                  'Confirm',
+                  'Are you sure to want updated you status to $_selectedStatus',
+                  () {
+                    setState(() {
+                      _updateStatus();
+                      getInfo();
+                    });
+                    Navigator.pop(context);
+                  },
+                );
               },
               child: CustomText(
                 text: 'Submit',
@@ -544,11 +615,21 @@ class _MobileLayoutState extends State<MobileLayout> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'In';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
               CustomClickCard(
@@ -563,11 +644,21 @@ class _MobileLayoutState extends State<MobileLayout> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'Out';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
             ],
@@ -587,11 +678,21 @@ class _MobileLayoutState extends State<MobileLayout> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'On Meeting';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
               CustomClickCard(
@@ -606,11 +707,21 @@ class _MobileLayoutState extends State<MobileLayout> {
                   color: Colors.black54,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'Out of Office';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
             ],
@@ -630,11 +741,21 @@ class _MobileLayoutState extends State<MobileLayout> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'In Class';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
               CustomClickCard(
@@ -649,11 +770,21 @@ class _MobileLayoutState extends State<MobileLayout> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'On Leave';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
             ],
@@ -734,8 +865,18 @@ class _MobileLayoutState extends State<MobileLayout> {
                 String inputValue = inputController.text;
                 print('User input: $inputValue');
                 _selectedStatus = inputValue;
-                _updateStatus();
-                Navigator.of(context).pop();
+                showConfirmDialog(
+                  context,
+                  'Confirm',
+                  'Are you sure to want updated you status to $_selectedStatus',
+                  () {
+                    setState(() {
+                      _updateStatus();
+                      getInfo();
+                    });
+                    Navigator.pop(context);
+                  },
+                );
               },
               child: CustomText(
                 text: 'Submit',

@@ -191,8 +191,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                                             '${user.firstname} ${user.lastname}',
                                         fontSize: ScreenUtil().setSp(10),
                                         color: Colors.black),
-                                    subtitle: 
-                                    Container(
+                                    subtitle: Container(
                                       alignment: Alignment.center,
                                       padding: EdgeInsets.all(5),
                                       decoration: BoxDecoration(
@@ -286,7 +285,8 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                                       //     text: 'Status: ${user.status}',
                                       //     fontSize: ScreenUtil().setSp(8),
                                       //     color: Colors.black),
-                                      trailing: Container(
+                                      // trailing:
+                                      subtitle: Container(
                                         alignment: Alignment.center,
                                         padding: EdgeInsets.all(5),
                                         width: 60,
@@ -301,7 +301,6 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
                                           color: _getTextColor(user.status),
                                         ),
                                       ),
-
                                       // trailing: CustomText(
                                       //     text: user.role,
                                       //     fontSize: ScreenUtil().setSp(5),
@@ -332,7 +331,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
       'In Class': STAT_BLUE_INCLASS,
       'On Leave': STAT_RED_ONLEAVE,
     };
-    return statusColors[status] ?? Colors.black;
+    return statusColors[status] ?? Colors.grey.shade400;
   }
 
   Color _getTextColor(String status) {

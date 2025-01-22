@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:faculty_stat_monitoring/constants.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_click_card.dart';
+import 'package:faculty_stat_monitoring/widgets/custom_loading_dialog.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -32,26 +33,24 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
   String name = '';
   String status = '';
   Timer? _refreshTimer;
-
+  var data;
   @override
   void initState() {
     super.initState();
     _initializeData();
+    getInfo();
   }
 
   Future<void> _initializeData() async {
     await getInfo();
-    // Set up a timer for periodic refresh every 5 seconds
-    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
-      await getInfo();
-    });
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) async {});
   }
 
   Future<void> getInfo() async {
     try {
       prefs = await SharedPreferences.getInstance();
-      final data = prefs.getString('data') ?? '';
-      if (data.isNotEmpty) {
+      data = prefs.getString('data') ?? '';
+      if (data == data) {
         final currentUser = jsonDecode(data);
         setState(() {
           name = currentUser['firstname'] ?? '';
@@ -63,8 +62,14 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    _refreshTimer?.cancel();
+    _initializeData();
+  }
+
   Future<void> _updateStatus() async {
-    prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
     if (token == null || token == 'NoValue') {
       Navigator.pushReplacementNamed(context, '/success');
@@ -83,25 +88,12 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       await prefs.setString('data', jsonEncode(data['currentUser']));
-      setState(() {
-        status = data['currentUser']['status']; // Update UI immediately
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Status updated')),
-      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to update status')),
       );
     }
   }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel(); // Cancel the timer to prevent memory leaks
-    super.dispose();
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -175,11 +167,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'In';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
               CustomClickCard(
@@ -194,11 +196,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'Out';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
             ],
@@ -218,11 +230,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'On Meeting';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
               CustomClickCard(
@@ -237,11 +259,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   color: Colors.black54,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'Out of Office';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
             ],
@@ -261,11 +293,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'In Class';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
               CustomClickCard(
@@ -280,11 +322,21 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   color: Colors.white,
                   size: ScreenUtil().setSp(50),
                 ),
-                onTap: () async {
+                onTap: () {
                   setState(() {
                     _selectedStatus = 'On Leave';
+                    showConfirmDialog(
+                      context,
+                      'Confirm',
+                      'Are you sure to want updated you status to $_selectedStatus',
+                      () {
+                        setState(() {
+                          _updateStatus();
+                          getInfo();
+                        });
+                      },
+                    );
                   });
-                  await _updateStatus();
                 },
               ),
             ],
@@ -365,8 +417,18 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                 String inputValue = inputController.text;
                 print('User input: $inputValue');
                 _selectedStatus = inputValue;
-                _updateStatus();
-                Navigator.of(context).pop();
+                showConfirmDialog(
+                  context,
+                  'Confirm',
+                  'Are you sure to want updated you status to $_selectedStatus',
+                  () {
+                    setState(() {
+                      _updateStatus();
+                      getInfo();
+                    });
+                    Navigator.pop(context);
+                  },
+                );
               },
               child: CustomText(
                 text: 'Submit',

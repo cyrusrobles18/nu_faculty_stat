@@ -8,7 +8,9 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/add_faculty_screen.dart';
 
-void main() => runApp(const FacultyStatMonitoringApp());
+void main() {
+  runApp(const FacultyStatMonitoringApp());
+}
 
 class FacultyStatMonitoringApp extends StatelessWidget {
   const FacultyStatMonitoringApp({super.key});
@@ -31,7 +33,8 @@ class FacultyStatMonitoringApp extends StatelessWidget {
             '/home': (context) => const HomeScreen(),
             '/faculty-dashboard': (context) => const FacultyDashboardScreen(),
             '/admin-dashboard': (context) => const AdminDashboardScreen(),
-            '/super-admin-dashboard': (context) => const SuperAdminDashboardScreen(),
+            '/super-admin-dashboard': (context) =>
+                const SuperAdminDashboardScreen(),
           },
         );
       },
