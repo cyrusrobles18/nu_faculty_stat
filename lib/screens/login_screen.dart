@@ -50,10 +50,11 @@ class _LoginScreenState extends State<LoginScreen> {
       // Extract role from token
       Map<String, dynamic> payload = Jwt.parseJwt(token);
       String role = payload['role'];
-
+      int id = payload['id'];
       prefs.setString('email', email);
       prefs.setString('password', password);
       prefs.setString('role', role);
+      prefs.setInt('id', id);
       prefs.setString('token', token);
       prefs.setBool('isLoggedIn', true);
       prefs.setString('data', jsonEncode(data['user']));

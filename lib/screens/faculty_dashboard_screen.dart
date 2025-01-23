@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:faculty_stat_monitoring/constants.dart';
+import 'package:faculty_stat_monitoring/models/user.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_click_card.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_loading_dialog.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_text.dart';
@@ -15,6 +16,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/custom_button.dart';
+import '../widgets/custom_pulse_icon.dart';
 import '../widgets/custom_textformfield.dart';
 
 class FacultyDashboardScreen extends StatefulWidget {
@@ -32,48 +34,78 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
   late SharedPreferences prefs;
   String name = '';
   String status = '';
+  late User user;
   Timer? _refreshTimer;
   var data;
+
   @override
   void initState() {
     super.initState();
-    _initializeData();
-    getInfo();
   }
 
-  Future<void> _initializeData() async {
-    await getInfo();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) async {});
-  }
-
-  Future<void> getInfo() async {
+  Future<User> getInfo() async {
     try {
       prefs = await SharedPreferences.getInstance();
-      data = prefs.getString('data') ?? '';
-      if (data == data) {
-        final currentUser = jsonDecode(data);
-        setState(() {
-          name = currentUser['firstname'] ?? '';
-          status = currentUser['status'] ?? '';
-        });
+      final token = prefs.getString('jwt_token');
+      final id = prefs.getInt('id');
+      if (token == null ||
+          token == 'NoValue' ||
+          id == null ||
+          token == 'NoValue') {
+        Navigator.pushReplacementNamed(context, '/success');
       }
-    } catch (e) {
-      debugPrint('Error fetching info: $e');
-    }
+      final url = Uri.parse('$HOST/api/users/$id');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print(response.body);
+
+      if (response.statusCode == 200) {
+        var body = jsonDecode(response.body);
+        user = User(
+            id: body['currentUser']['id'],
+            firstname: body['currentUser']['firstname'],
+            lastname: body['currentUser']['lastname'],
+            email: body['currentUser']['email'],
+            status: body['currentUser']['status'],
+            role: body['currentUser']['role'],
+            password: body['currentUser']['password']);
+
+        status = user.status;
+        print(status);
+        name = user.firstname;
+        print(name);
+        return user;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to getinfo')),
+        );
+      }
+    } catch (e) {}
+    return User(
+        id: 0,
+        firstname: '',
+        lastname: '',
+        email: '',
+        status: status,
+        role: '',
+        password: '');
   }
 
   @override
   void dispose() {
     super.dispose();
-    _refreshTimer?.cancel();
-    _initializeData();
   }
 
   Future<void> _updateStatus() async {
     final token = prefs.getString('jwt_token');
     if (token == null || token == 'NoValue') {
       Navigator.pushReplacementNamed(context, '/success');
-      return;
     }
     final url = Uri.parse('$HOST/api/status');
     final response = await http.put(
@@ -86,8 +118,16 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await prefs.setString('data', jsonEncode(data['currentUser']));
+      final body = jsonDecode(response.body);
+      print(data);
+      user = User(
+          id: body['currentUser']['id'],
+          firstname: body['currentUser']['firstname'],
+          lastname: body['currentUser']['lastname'],
+          email: body['currentUser']['email'],
+          status: body['currentUser']['status'],
+          role: body['currentUser']['role'],
+          password: body['currentUser']['password']);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to update status')),
@@ -100,56 +140,75 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
     return Scaffold(
       body: Column(
         children: <Widget>[
-          Container(
-            padding: EdgeInsets.all(ScreenUtil().setSp(20)),
-            decoration: BoxDecoration(
-              color: NU_BLUE,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(ScreenUtil().setSp(20)),
-                bottomRight: Radius.circular(ScreenUtil().setSp(20)),
-              ),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CircleAvatar(
-                      radius: ScreenUtil().setSp(30),
-                      backgroundColor: NU_YELLOW,
-                      backgroundImage:
-                          const AssetImage('assets/images/NUShield.png'),
+          FutureBuilder<User>(
+            future: getInfo(),
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              if (snapshot.hasData) {
+                return Container(
+                  padding: EdgeInsets.all(ScreenUtil().setSp(20)),
+                  decoration: BoxDecoration(
+                    color: NU_BLUE,
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(ScreenUtil().setSp(20)),
+                      bottomRight: Radius.circular(ScreenUtil().setSp(20)),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.logout, color: NU_YELLOW),
-                      onPressed: () async {
-                        final prefs = await SharedPreferences.getInstance();
-                        prefs.setString('jwt_token', 'NoValue');
-                        Navigator.pushReplacementNamed(context, '/login');
-                      },
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CircleAvatar(
+                            radius: ScreenUtil().setSp(30),
+                            backgroundColor: NU_YELLOW,
+                            backgroundImage:
+                                const AssetImage('assets/images/NUShield.png'),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.logout, color: NU_YELLOW),
+                            onPressed: () async {
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              prefs.setString('jwt_token', 'NoValue');
+                              Navigator.pushReplacementNamed(context, '/login');
+                            },
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: ScreenUtil().setHeight(10)),
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: CustomText(
+                          text: 'Welcome, ${user.firstname}',
+                          fontSize: ScreenUtil().setSp(20),
+                          color: NU_YELLOW,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: CustomText(
+                          text: 'Status: ${user.status}',
+                          fontSize: ScreenUtil().setSp(15),
+                          color: NU_YELLOW,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                return Container(
+                    padding: EdgeInsets.all(ScreenUtil().setSp(20)),
+                    decoration: BoxDecoration(
+                      color: NU_BLUE,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(ScreenUtil().setSp(20)),
+                        bottomRight: Radius.circular(ScreenUtil().setSp(20)),
+                      ),
                     ),
-                  ],
-                ),
-                SizedBox(height: ScreenUtil().setHeight(10)),
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: CustomText(
-                    text: 'Welcome, ${name}',
-                    fontSize: ScreenUtil().setSp(20),
-                    color: NU_YELLOW,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: CustomText(
-                    text: 'Status: ${status}',
-                    fontSize: ScreenUtil().setSp(15),
-                    color: NU_YELLOW,
-                  ),
-                ),
-              ],
-            ),
+                    child: Center(child: CustomPulseIcon()));
+              }
+            },
           ),
           SizedBox(height: ScreenUtil().setHeight(30)),
           Row(
@@ -177,7 +236,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                       () {
                         setState(() {
                           _updateStatus();
-                          getInfo();
                         });
                       },
                     );
@@ -206,7 +264,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                       () {
                         setState(() {
                           _updateStatus();
-                          getInfo();
                         });
                       },
                     );
@@ -240,7 +297,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                       () {
                         setState(() {
                           _updateStatus();
-                          getInfo();
                         });
                       },
                     );
@@ -269,7 +325,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                       () {
                         setState(() {
                           _updateStatus();
-                          getInfo();
                         });
                       },
                     );
@@ -303,7 +358,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                       () {
                         setState(() {
                           _updateStatus();
-                          getInfo();
                         });
                       },
                     );
@@ -332,7 +386,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                       () {
                         setState(() {
                           _updateStatus();
-                          getInfo();
                         });
                       },
                     );
@@ -424,7 +477,6 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
                   () {
                     setState(() {
                       _updateStatus();
-                      getInfo();
                     });
                     Navigator.pop(context);
                   },

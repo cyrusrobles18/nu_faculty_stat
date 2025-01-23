@@ -107,7 +107,7 @@ app.post('/api/login', async (req, res) => {
       { expiresIn: '1h' }
     );
 
-    res.status(200).json({ message: 'Login successful', token , user });
+    res.status(200).json({ message: 'Login successful', token, user });
   } catch (err) {
     console.error('Error during login:', err);
     res.status(500).json({ message: 'Server error' });
@@ -139,23 +139,6 @@ app.get('/api/users', async (req, res) => {
     return res.sendStatus(403); // Forbidden
   }
 });
-// app.get('/api/users', async (req, res) => {
-//   try {
-//     // Skipping token validation for now, proceed with fetching users
-
-//     // Fetch users from the database
-//     const [results] = await db.query('SELECT id, firstname, lastname, email, status, role FROM users');
-
-//     if (results.length === 0) {
-//       return res.status(404).json({ message: 'No users found' });
-//     }
-
-//     res.status(200).json(results);  // Send the results as a JSON response
-//   } catch (err) {
-//     console.error('Error fetching users:', err);
-//     return res.status(500).json({ message: 'Internal server error' });  // If there's a database issue
-//   }
-// });
 
 
 
@@ -183,7 +166,7 @@ app.put('/api/status', async (req, res) => {
     var [currentUser] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
     currentUser = currentUser[0];
     await db.query('UPDATE users SET status = ? WHERE id = ?', [status, userId]);
-    res.status(200).json({ message: 'Status updated successfully' , currentUser});
+    res.status(200).json({ message: 'Status updated successfully', currentUser });
   } catch (err) {
     console.error('Error verifying token or updating status:', err);
     return res.sendStatus(403); // Forbidden
@@ -221,6 +204,73 @@ app.put('/api/users/:id/role', async (req, res) => {
   } catch (err) {
     console.error('Error verifying token or updating role:', err);
     return res.sendStatus(403); // Forbidden
+  }
+});
+
+// app.get('/api/users', async (req, res) => {
+//   try {
+//     // Skipping token validation for now, proceed with fetching users
+
+//     // Fetch users from the database
+//     const [results] = await db.query('SELECT id, firstname, lastname, email, status, role FROM users');
+
+//     if (results.length === 0) {
+//       return res.status(404).json({ message: 'No users found' });
+//     }
+
+//     res.status(200).json(results);  // Send the results as a JSON response
+//   } catch (err) {
+//     console.error('Error fetching users:', err);
+//     return res.status(500).json({ message: 'Internal server error' });  // If there's a database issue
+//   }
+// });
+
+// Get user by id
+// app.post('/api/users/:id', async (req, res) => {
+//   // Extract token from Authorization header
+//   // const authHeader = req.headers['authorization'];
+//   // const token = authHeader && authHeader.split(' ')[1];
+
+//   // if (!token) return res.sendStatus(401); // Unauthorized
+
+//   try {
+//     // Verify token
+//     // const user = jwt.verify(token, process.env.JWT_SECRET);
+
+
+//     // Proceed with updating user role
+//     const userId = req.params.id;
+
+//    const currentUser = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+//     res.status(200).json({ currentUser });
+//   } catch (err) {
+//     return res.status(500).json({ message: 'Internal server error' });
+//   }
+// });
+// Revised get user by id
+app.post('/api/users/:id', async (req, res) => {
+  // Extract token from Authorization header
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.sendStatus(401); // Unauthorized
+  try {
+    const userId = req.params.id;
+
+    // Correct SQL syntax for the SELECT query
+    var [currentUser] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+
+    // Check if a user was found
+    if (currentUser.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    currentUser = currentUser[0];
+    // Send the retrieved user data as the response
+    res.status(200).json({ currentUser });
+  } catch (err) {
+    // Handle errors and return a proper error response
+    console.error(err);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 });
 
