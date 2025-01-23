@@ -45,3 +45,29 @@ void showConfirmDialog(BuildContext context, String title, String message,
     },
   );
 }
+
+
+void showLoadingDialog(BuildContext context) {
+  AlertDialog alert = AlertDialog(
+    title: Row(
+      children: [
+        CustomPulseIcon(),
+        const SizedBox(width: 10),
+        CustomText(
+          text: 'Please wait for a while',
+          color: Colors.black,
+          fontWeight: FontWeight.bold,
+          fontSize: ScreenUtil().setSp(12),
+        ),
+      ],
+    ),
+  );
+
+  showDialog(
+    barrierDismissible: false, // Prevent dismissing by tapping outside
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
+}

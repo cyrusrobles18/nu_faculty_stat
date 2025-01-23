@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:faculty_stat_monitoring/constants.dart';
 import 'package:faculty_stat_monitoring/models/user.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_click_card.dart';
-import 'package:faculty_stat_monitoring/widgets/custom_loading_dialog.dart';
+import 'package:faculty_stat_monitoring/widgets/custom_dialogs.dart';
 import 'package:faculty_stat_monitoring/widgets/custom_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -116,7 +116,8 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
       },
       body: jsonEncode({'status': _selectedStatus}),
     );
-
+    // ignore: use_build_context_synchronously
+    showLoadingDialog(context);
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
       print(data);
@@ -128,6 +129,7 @@ class _FacultyDashboardScreenState extends State<FacultyDashboardScreen> {
           status: body['currentUser']['status'],
           role: body['currentUser']['role'],
           password: body['currentUser']['password']);
+      Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to update status')),

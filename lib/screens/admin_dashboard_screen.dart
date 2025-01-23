@@ -12,7 +12,7 @@ import '../constants.dart';
 import '../models/user.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_click_card.dart';
-import '../widgets/custom_loading_dialog.dart';
+import '../widgets/custom_dialogs.dart';
 import '../widgets/custom_pulse_icon.dart';
 import '../widgets/custom_text.dart';
 
