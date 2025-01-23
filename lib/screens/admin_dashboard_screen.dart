@@ -78,7 +78,6 @@ class _PCLayoutState extends State<PCLayout> {
       );
 
       print(response.body);
-
       if (response.statusCode == 200) {
         var body = jsonDecode(response.body);
         user = User(
@@ -94,6 +93,7 @@ class _PCLayoutState extends State<PCLayout> {
         print(status);
         name = user.firstname;
         print(name);
+
         return user;
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -130,7 +130,7 @@ class _PCLayoutState extends State<PCLayout> {
       },
       body: jsonEncode({'status': _selectedStatus}),
     );
-
+    showLoadingDialog(context);
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
       print(data);
@@ -142,6 +142,7 @@ class _PCLayoutState extends State<PCLayout> {
           status: body['currentUser']['status'],
           role: body['currentUser']['role'],
           password: body['currentUser']['password']);
+      Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to update status')),
@@ -603,7 +604,7 @@ class _MobileLayoutState extends State<MobileLayout> {
       },
       body: jsonEncode({'status': _selectedStatus}),
     );
-
+    showLoadingDialog(context);
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
       print(data);
@@ -615,6 +616,7 @@ class _MobileLayoutState extends State<MobileLayout> {
           status: body['currentUser']['status'],
           role: body['currentUser']['role'],
           password: body['currentUser']['password']);
+      Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to update status')),
